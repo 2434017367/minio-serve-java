@@ -18,8 +18,8 @@
     <groupId>com.example</groupId>
     <artifactId>minio</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>minio</name>
-    <description>minio</description>
+    <name>minio-serve-java</name>
+    <description>minio-serve-java</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>
