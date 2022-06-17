@@ -13,6 +13,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author zhy
@@ -96,6 +98,47 @@ public class Test3 {
 
     }
 
+    /**
+     * sjc = 81LLLoLLoK8i
+     * pyl = 1
+     * d81LLLoLLoK8ica6d7dc7da342af9a7afb1eb3b95626
+     * mj = e92MMMpMMpL9jdb7e8ed8eb453bg:b8bgc2fc4c:6737
+     */
+    @Test
+    public void Test4(){
+        String timeStamp = "81LLLoLLoK8i";
+        String miyao = "e92MMMpMMpL9jdb7e8ed8eb453bg:b8bgc2fc4c:6737";
+
+        String[] cs = new String[]{"o", "8", "L", "A", "e", "5", "K", "i", "y", "1"};
+
+        Map<String, Integer> map = new HashMap<>();
+        for (int i = 0; i < cs.length; i++) {
+            map.put(cs[i], i);
+        }
+        // 计算偏移量
+        int pyl = 0;
+        StringBuffer time = new StringBuffer();
+        for (int i = 0; i < timeStamp.length(); i++) {
+            char c = timeStamp.charAt(i);
+            Integer integer = map.get(Character.toString(c));
+            if (i == 0) {
+                pyl = integer;
+            }
+            time.append(integer);
+        }
+
+        // 获得原始密钥
+        StringBuffer ysmy = new StringBuffer();
+        for (int i = 0; i < miyao.length(); i++) {
+            char c = (char)((int)miyao.charAt(i) - pyl);
+            ysmy.append(c);
+        }
+
+        // 获得appkey
+        String appkey = ysmy.toString().replace(timeStamp, "");
+
+        System.out.println("appkey = " + appkey);
+    }
 
 
 
