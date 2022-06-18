@@ -77,6 +77,14 @@ public class FilesController {
         InputStream in = null;
         ServletOutputStream out = null;
         try {
+            String wholeFilePath = files.getWholeFilePath();
+            String minioBucket = LoginAppUtils.getAppInfo().getMinioBucket();
+
+            in = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(minioBucket)
+                    .object(wholeFilePath)
+                    .build());
+
             //设置相关参数
             response.setHeader("Accept-Ranges","bytes");
             String fileName = files.getFileName();
@@ -85,12 +93,6 @@ public class FilesController {
                     new String(fileName.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1)
                     + fileSuffix + "\"");
 
-            String wholeFilePath = files.getWholeFilePath();
-            String minioBucket = LoginAppUtils.getAppInfo().getMinioBucket();
-            in = minioClient.getObject(GetObjectArgs.builder()
-                    .bucket(minioBucket)
-                    .object(wholeFilePath)
-                    .build());
             out = response.getOutputStream();
             long length = IOUtils.copyLarge(in, out);
         } catch (Exception e) {
