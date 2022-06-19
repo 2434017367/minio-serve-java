@@ -39,9 +39,9 @@ public class RequestInterceptor implements HandlerInterceptor {
         }
 
         // 获取 加密appKey
-        String appKey = request.getHeader("appKey");
+        String appKey = request.getHeader("key1");
         // 获取 加密时间戳
-        String stamp = request.getHeader("stamp");
+        String stamp = request.getHeader("key2");
         // 校验
         String decode = AppKeyUtils.decode(appKey, stamp);
 
