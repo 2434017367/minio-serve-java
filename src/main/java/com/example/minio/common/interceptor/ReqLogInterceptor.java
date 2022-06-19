@@ -106,14 +106,16 @@ public class ReqLogInterceptor implements HandlerInterceptor, DisposableBean {
             String finalBody = body;
             MyExceptionInfo myExceptionInfo = MyExceptionInfo.getExceptionInfo();
             Future<?> submit = executor.submit(() -> {
+                int responseStatus = response.getStatus();
                 // 日志封装
                 String logs = String.format("uri：%s，method：%s，ip：%s，执行耗时：%dms，params：%s, body：%s", requestURI, method, ip, duration, finalParams, finalBody);
                 // 查看是否有异常信息
-                boolean isError = false;
                 if (myExceptionInfo != null) {
                     logs = "errCode：" + myExceptionInfo.getCode() + "，errMsg：" + myExceptionInfo.getMsg() + "，" + logs;
                     log.error(logs, myExceptionInfo.getE());
-                    isError = true;
+                } else if (responseStatus != 200) {
+                    logs = "httpStatus：" + responseStatus + "，" + logs;
+                    log.error(logs);
                 } else {
                     log.info(logs);
                 }

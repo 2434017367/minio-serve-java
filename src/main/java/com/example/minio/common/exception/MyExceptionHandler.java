@@ -3,10 +3,11 @@ package com.example.minio.common.exception;
 import com.example.minio.common.result.Result;
 import com.example.minio.common.result.ResultCodeEnum;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @email 2434017367@qq.com
@@ -22,40 +23,32 @@ public class MyExceptionHandler {
      * 处理自定义异常
      */
     @ExceptionHandler(RRException.class)
-    public Result handleRRException(RRException e){
+    public Result handleRRException(RRException e, HttpServletResponse response){
+        setResponseStatus(response);
         Result error = Result.error(ResultCodeEnum.ERROR_BUSINESS, e.getMsg());
         setExceptionInfo(error, e);
         return error;
     }
 
     /**
-     * 数据库唯一索引错误
+     * 异常处理
      * @param e
+     * @param response
      * @return
      */
-    @ExceptionHandler(DuplicateKeyException.class)
-    public Result handleDuplicateKeyException(DuplicateKeyException e) {
-        Result error = Result.error(ResultCodeEnum.ERROR_BUSINESS, "sql重复键异常");
-        setExceptionInfo(error, e);
-        return error;
-    }
-
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public Result handleHttpRequestMethodNotSupportedException(Exception e) {
-        Result error = Result.error(ResultCodeEnum.ERROR_BUSINESS, "请求方法类型错误");
-        setExceptionInfo(error, e);
-        return error;
-    }
-
     @ExceptionHandler(Exception.class)
-    public Result handleException(Exception e){
+    public Result handleException(Exception e, HttpServletResponse response){
+        setResponseStatus(response);
         Result error = Result.error(ResultCodeEnum.ERROR_SERVER);
         setExceptionInfo(error, e);
         return error;
     }
 
+    private void setResponseStatus(HttpServletResponse response) {
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    }
+
     private void setExceptionInfo(Result result, Throwable e){
-        log.error(e);
         MyExceptionInfo.setExceptionInfo(result.getCode().getCode(), result.getMsg(), e);
     }
 

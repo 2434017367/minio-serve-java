@@ -11,6 +11,7 @@ import com.example.minio.service.AppsService;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -62,13 +63,14 @@ public class RequestInterceptor implements HandlerInterceptor {
 
     }
 
-    private void error( HttpServletResponse httpServletResponse, Result result, Exception exception){
+    private void error(HttpServletResponse httpServletResponse, Result result, Exception exception){
         MyExceptionInfo.setExceptionInfo(result.getCode().getCode(), result.getMsg(), exception);
         try {
             httpServletResponse.setCharacterEncoding("utf-8");
             httpServletResponse.setContentType("application/json; charset=utf-8");
             httpServletResponse.setHeader("Access-Control-Allow-Origin", "*");
             httpServletResponse.setHeader("Cache-Control", "no-cache");
+            httpServletResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             PrintWriter out = httpServletResponse.getWriter();
             String res = gson.toJson(result);
             out.write(res);
