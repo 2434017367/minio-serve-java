@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.minio.common.enums.FilePathEnum;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
-import com.example.minio.common.minio.MinioClientPool;
+import com.example.minio.common.utils.office.minio.MinioClientPool;
 import com.example.minio.common.result.Result;
 import com.example.minio.dao.FilesDao;
 import com.example.minio.entity.apps.Apps;

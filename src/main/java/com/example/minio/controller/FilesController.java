@@ -3,7 +3,7 @@ package com.example.minio.controller;
 import cn.hutool.core.io.FileUtil;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
-import com.example.minio.common.minio.MinioClientPool;
+import com.example.minio.common.utils.office.minio.MinioClientPool;
 import com.example.minio.common.result.Result;
 import com.example.minio.common.utils.FileUtils;
 import com.example.minio.common.utils.LoginAppUtils;

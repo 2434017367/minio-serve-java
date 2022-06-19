@@ -1,6 +1,10 @@
 package com.example.minio.common.utils;
 
 import com.example.minio.entity.apps.Apps;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author zhy
@@ -11,11 +15,15 @@ import com.example.minio.entity.apps.Apps;
  */
 public class LoginAppUtils {
 
+
+    private static HttpServletRequest getRequest(){
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        return request;
+    }
+
     public static Apps getAppInfo() {
-        Apps apps = new Apps();
-        apps.setId("8ba74b55b7f74cc9b788f1095d403f75");
-        apps.setAppKey("920e166308e24bc8a5ba92a7497dcd69");
-        apps.setMinioBucket("test");
+        HttpServletRequest request = getRequest();
+        Apps apps = (Apps) request.getAttribute("app");
         return apps;
     }
 

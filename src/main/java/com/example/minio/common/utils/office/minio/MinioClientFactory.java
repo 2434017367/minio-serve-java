@@ -1,9 +1,8 @@
-package com.example.minio.common.minio;
+package com.example.minio.common.utils.office.minio;
 
 import com.example.minio.common.config.MinioConfig;
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 /**
  * @author zhy

@@ -47,10 +47,13 @@ public class RequestInterceptor implements HandlerInterceptor {
 
         // 校验
         if (decode != null) {
-            boolean b = appsService.count(new LambdaQueryWrapper<Apps>()
-                    .eq(Apps::getAppKey, decode)) > 0;
-            if (b) {
+            Apps one = appsService.getOne(new LambdaQueryWrapper<Apps>()
+                    .eq(Apps::getAppKey, decode));
+            request.setAttribute("app", one);
+            if (one != null) {
                 return true;
+            }else {
+                error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "非法请求"), null);
             }
         } else {
             error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "非法请求"), null);

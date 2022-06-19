@@ -1,4 +1,4 @@
-package com.example.minio.common.minio;
+package com.example.minio.common.utils.office.minio;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
