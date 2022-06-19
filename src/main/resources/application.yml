@@ -22,3 +22,6 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true #开启驼峰命名
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #打印SQL语句
+
+minio:
+  appkey:

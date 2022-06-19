@@ -1,6 +1,7 @@
 package com.example.minio.test;
 
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -138,6 +139,21 @@ public class Test3 {
         String appkey = ysmy.toString().replace(timeStamp, "");
 
         System.out.println("appkey = " + appkey);
+    }
+
+    @Test
+    public void Test5() {
+
+
+        for (int i = 0; i < 4; i++) {
+            for (int j = 5-i; j > 0; j--) {
+                System.out.print(" ");
+            }
+            for (int j = 1; j <= 2 * i + 1; j++) {
+                System.out.print(j);
+            }
+            System.out.println();
+        }
     }
 
 

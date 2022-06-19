@@ -1,6 +1,7 @@
 package com.example.minio.common.config;
 
 import com.example.minio.common.interceptor.ReqLogInterceptor;
+import com.example.minio.common.interceptor.RequestInterceptor;
 import com.example.minio.common.xss.XssFilter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -22,6 +23,8 @@ public class AppWebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new ReqLogInterceptor())
+                .addPathPatterns("/**");
+        registry.addInterceptor(new RequestInterceptor())
                 .addPathPatterns("/**");
     }
 
