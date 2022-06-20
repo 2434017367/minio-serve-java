@@ -1,5 +1,6 @@
 package com.example.minio.controller;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
@@ -232,6 +233,13 @@ public class FilesController {
     @GetMapping("/getListByIds")
     public Result getListByIds(@RequestParam("ids") String ids){
         List<Files> sysFilesList = filesService.getListByIds(ids);
+
+        if (CollUtil.isNotEmpty(sysFilesList)) {
+            for (Files files : sysFilesList) {
+                files.setAppId(null).setFilePath(null).setCreateTime(null);
+            }
+        }
+
         return Result.ok(sysFilesList);
     }
 

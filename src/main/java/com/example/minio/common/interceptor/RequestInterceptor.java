@@ -60,16 +60,15 @@ public class RequestInterceptor implements HandlerInterceptor {
                 // 时间校验
                 Date now = new Date();
                 long between = DateUtil.between(stampDate, now, DateUnit.MINUTE, false);
-                // 误差5分钟
-                if (between < -5) {
-                    error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "系统时间错误"), null);
-                }
-                // 校验appKey
-                Apps one = appsService.getOne(new LambdaQueryWrapper<Apps>()
-                        .eq(Apps::getAppKey, getAppKey));
-                request.setAttribute("app", one);
-                if (one != null) {
-                    return true;
+                // 时间允许误差前2分钟后5分钟
+                if (between > -5 && between < 2) {
+                    // 校验appKey
+                    Apps one = appsService.getOne(new LambdaQueryWrapper<Apps>()
+                            .eq(Apps::getAppKey, getAppKey));
+                    request.setAttribute("app", one);
+                    if (one != null) {
+                        return true;
+                    }
                 }
             }
         }
