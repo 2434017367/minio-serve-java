@@ -1,5 +1,7 @@
 package com.example.minio.common.interceptor;
 
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.minio.common.exception.MyExceptionInfo;
 import com.example.minio.common.result.Result;
@@ -19,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.util.Date;
 
 /**
  * 请求拦截器
@@ -43,24 +46,38 @@ public class RequestInterceptor implements HandlerInterceptor {
         String appKey = request.getHeader("key1");
         // 获取 加密时间戳
         String stamp = request.getHeader("key2");
-        // 校验
-        String decode = AppKeyUtils.decode(appKey, stamp);
 
-        // 校验
-        if (decode != null) {
-            Apps one = appsService.getOne(new LambdaQueryWrapper<Apps>()
-                    .eq(Apps::getAppKey, decode));
-            request.setAttribute("app", one);
-            if (one != null) {
-                return true;
-            }else {
-                error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "非法请求"), null);
-            }
-        } else {
-            error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "非法请求"), null);
+        if (appKey == null ) {
+            appKey = request.getParameter("key1");
         }
-        return false;
+        if (stamp == null) {
+            stamp = request.getParameter("key2");
+        }
 
+        // 校验
+        Decode decode = AppKeyUtils.decode(appKey, stamp);
+        if (decode != null) {
+            String getAppKey = decode.getAppKey();
+            Date stampDate = decode.getStamp();
+            if (stampDate != null && getAppKey != null) {
+                // 时间校验
+                Date now = new Date();
+                long between = DateUtil.between(stampDate, now, DateUnit.MINUTE, false);
+                // 误差5分钟
+                if (between < -5) {
+                    error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "系统时间错误"), null);
+                }
+                // 校验appKey
+                Apps one = appsService.getOne(new LambdaQueryWrapper<Apps>()
+                        .eq(Apps::getAppKey, getAppKey));
+                request.setAttribute("app", one);
+                if (one != null) {
+                    return true;
+                }
+            }
+        }
+        error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "非法请求"), null);
+        return false;
     }
 
     private void error(HttpServletResponse httpServletResponse, Result result, Exception exception){

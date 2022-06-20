@@ -3,6 +3,7 @@ package com.example.minio.common.utils;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
+import com.example.minio.common.interceptor.Decode;
 import com.example.minio.common.result.ResultCodeEnum;
 
 import java.text.DateFormat;
@@ -14,7 +15,8 @@ import java.util.Map;
 
 public class AppKeyUtils {
 
-    public static String decode(String secretKey,String timeStamp ){
+    public static Decode decode(String secretKey, String timeStamp ){
+        Decode decode = new Decode();
         if (secretKey == null || timeStamp == null) {
             return null;
         }
@@ -35,14 +37,12 @@ public class AppKeyUtils {
             }
             time.append(integer);
         }
-        Date now = new Date();
         DateFormat df = new SimpleDateFormat("ssyyHHmmMMdd");
 
+//
         try {
             Date parse = df.parse(time.toString());
-            if (!(DateUtil.between(parse, now, DateUnit.MS, false) > 0)) {
-                return null;
-            }
+            decode.setStamp(parse);
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -56,8 +56,8 @@ public class AppKeyUtils {
 
         // 获得appkey
         String appkey = ysmy.toString().replace(timeStamp, "");
-
-        return appkey;
+        decode.setAppKey(appkey);
+        return decode;
     }
 
 }
