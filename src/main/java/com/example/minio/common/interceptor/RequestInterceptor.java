@@ -11,8 +11,6 @@ import com.example.minio.common.utils.SpringContextHolder;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.service.AppsService;
 import com.google.gson.Gson;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -20,7 +18,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
-import java.lang.reflect.Method;
 import java.util.Date;
 
 /**
