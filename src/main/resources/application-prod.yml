@@ -48,8 +48,8 @@ spring:
 
 #minio配置
 minio:
-  access-key: HUOc7YnSdUx6f4E8
-  secret-key: a9AevahcQQQ4IUAoVPqKJugGygzsrdb9
+  access-key: diUS4fhWdBAaYkCY
+  secret-key: GWUS43k0tRzVMNmt7J730b8n8NOosmcI
   endpoint: http://127.0.0.1:9000
 
 # 应用的配置数据
