@@ -56,13 +56,12 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
         // 获取文件名和后缀
         String originalFilename = multipartFile.getOriginalFilename();
         String[] split = originalFilename.split("\\.");
-        String fileName = split[0];
-        String suffix = split[1];
-        if (StrUtil.isEmpty(suffix)) {
+        if (split.length == 1) {
             return Result.error("文件无后缀无法判断文件类型");
-        } else {
-            suffix = suffix.toLowerCase();
         }
+
+        String fileName = split[0];
+        String suffix = split[1].toLowerCase();
 
         // 判断文件类型是否在白名单中
         if (FileTypeEnum.isNotExistFileType(suffix)){
