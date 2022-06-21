@@ -67,7 +67,6 @@ public class Test3 {
         String decryptStr = des.decryptStr(encryptHex);
         System.out.println("decryptStr = " + decryptStr);
     }
-
     private static final String appKey = "dca6d7dc7da342af9a7afb1eb3b95626";
 
     @Test
@@ -78,7 +77,7 @@ public class Test3 {
         int pyl = 0;
         for (int i = 0; i < s.length(); i++) {
             Integer index = Integer.parseInt(s.substring(i, i + 1));
-            if (i == 0) {
+            if (i == 1) {
                 pyl = index;
             }
             sb.append(cs[index]);
@@ -92,23 +91,33 @@ public class Test3 {
 
         StringBuffer mj = new StringBuffer();
         for (int i = 0; i < m.length(); i++) {
-            char c = (char)((int)m.charAt(i) + pyl);
-            mj.append(c);
+            int c = (int) m.charAt(i);
+            int y = c + pyl;
+            if (y < 48) {
+                y = 123 - (48 - y);
+            } else if (y > 57 && y < 65) {
+                y += 7;
+            } else if (y > 90 && y < 97) {
+                y += 6;
+            } else if (y > 122) {
+                y = y - 122 + 47;
+            }
+            mj.append((char) y);
         }
         System.out.println("mj = " + mj);
 
     }
 
     /**
-     * sjc = 81LLLoLLoK8i
-     * pyl = 1
-     * d81LLLoLLoK8ica6d7dc7da342af9a7afb1eb3b95626
-     * mj = e92MMMpMMpL9jdb7e8ed8eb453bg:b8bgc2fc4c:6737
+     sjc = 81LL8KLLoKL8
+     pyl = 9
+     dca6d7dc781LL8KLLoKL8da342af9a7afb1eb3b95626
+     mj = mljFmGmlGAAUUATUUxTUAmjCDBjoBjGjokAnkCkBEFBF
      */
     @Test
     public void Test4(){
-        String timeStamp = "81LLLoLLoK8i";
-        String miyao = "e92MMMpMMpL9jdb7e8ed8eb453bg:b8bgc2fc4c:6737";
+        String timeStamp = "81LL8KLLoKL8";
+        String miyao = "mljFmGmlGAAUUATUUxTUAmjCDBjoBjGjokAnkCkBEFBF";
 
         String[] cs = new String[]{"o", "8", "L", "A", "e", "5", "K", "i", "y", "1"};
 
@@ -122,7 +131,7 @@ public class Test3 {
         for (int i = 0; i < timeStamp.length(); i++) {
             char c = timeStamp.charAt(i);
             Integer integer = map.get(Character.toString(c));
-            if (i == 0) {
+            if (i == 1) {
                 pyl = integer;
             }
             time.append(integer);
@@ -131,14 +140,70 @@ public class Test3 {
         // 获得原始密钥
         StringBuffer ysmy = new StringBuffer();
         for (int i = 0; i < miyao.length(); i++) {
-            char c = (char)((int)miyao.charAt(i) - pyl);
-            ysmy.append(c);
+            int c = (int)miyao.charAt(i);
+            int y = c - pyl;
+            if (y < 48) {
+                y = 123 - (48 - y);
+            } else if (y > 57 && y < 65) {
+                y -= 7;
+            } else if (y > 90 && y < 97) {
+                y -= 6;
+            } else if (y > 122) {
+                y = y - 122 + 47;
+            }
+            ysmy.append((char) y);
         }
 
         // 获得appkey
         String appkey = ysmy.toString().replace(timeStamp, "");
 
         System.out.println("appkey = " + appkey);
+    }
+
+    @Test
+    public void test6() {
+        String m = "123456789";
+        int pyl = 4;
+
+        StringBuffer mj = new StringBuffer();
+        for (int i = 0; i < m.length(); i++) {
+            int c = (int)m.charAt(i);
+            int y = c + pyl;
+            if (y < 48) {
+                y = 123 - (48 - y);
+            } else if (y > 57 && y < 65) {
+                y += 7;
+            } else if (y > 90 && y < 97) {
+                y += 6;
+            } else if (y > 122) {
+                y = y - 122 + 47;
+            }
+            mj.append((char) y);
+        }
+        System.out.println("mj = " + mj);
+    }
+
+    @Test
+    public void test7() {
+        String m = "56789ABCD";
+        int pyl = 4;
+
+        StringBuffer mj = new StringBuffer();
+        for (int i = 0; i < m.length(); i++) {
+            int c = (int)m.charAt(i);
+            int y = c - pyl;
+            if (y < 48) {
+                y = 123 - (48 - y);
+            } else if (y > 57 && y < 65) {
+                y += 7;
+            } else if (y > 90 && y < 97) {
+                y += 6;
+            } else if (y > 122) {
+                y = y - 122 + 47;
+            }
+            mj.append((char) y);
+        }
+        System.out.println("mj = " + mj);
     }
 
     @Test
