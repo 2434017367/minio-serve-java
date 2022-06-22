@@ -2,13 +2,15 @@ package com.example.minio.controller;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.IdUtil;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
-import com.example.minio.common.utils.office.minio.MinioClientPool;
 import com.example.minio.common.result.Result;
 import com.example.minio.common.utils.FileUtils;
 import com.example.minio.common.utils.LoginAppUtils;
 import com.example.minio.common.utils.office.WordUtils;
+import com.example.minio.common.utils.office.minio.MinioClientPool;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.service.FilesService;
@@ -67,11 +69,11 @@ public class FilesController {
      * @return
      */
     @GetMapping("/download")
-    public Result download(@RequestParam("fileId") String fileId,
+    public void download(@RequestParam("fileId") String fileId,
                            HttpServletResponse response) {
         Files files = filesService.getById(fileId);
         if (files == null) {
-            return Result.error("文件不存在");
+            throw new RRException("文件不存在");
         }
 
         MinioClient minioClient = minioClientPool.getMinioClient();
@@ -115,8 +117,6 @@ public class FilesController {
                 e.printStackTrace();
             }
         }
-
-        return Result.ok();
     }
 
     /**
@@ -207,6 +207,55 @@ public class FilesController {
                 log.error("临时文件删除失败");
             }
         }
+    }
+
+    /**
+     * word转pdf
+     * @param multipartFile
+     */
+    @PostMapping("/wordToPdf")
+    public void wordToPdf(@RequestParam("file") MultipartFile multipartFile,
+                         HttpServletResponse response) throws Exception {
+        // 获取文件名和后缀
+        String originalFilename = multipartFile.getOriginalFilename();
+        String[] split = originalFilename.split("\\.");
+        if (split.length == 1) {
+            throw new RRException("文件无后缀无法判断文件类型");
+        }
+
+        // 判断文件类型是word类型
+        String suffix = split[1].toLowerCase();
+        if (!FileTypeEnum.isWord(suffix)) {
+            throw new RRException("文件格式不为word");
+        }
+
+        // 创建word文件
+        InputStream inputStream = multipartFile.getInputStream();
+        String docFileName = IdUtil.simpleUUID() + "." + suffix;
+        String docFilePath = fileUtils.getInterimFilePath(docFileName);
+        FileOutputStream fileOutputStream = new FileOutputStream(docFilePath);
+        IoUtil.copy(inputStream, fileOutputStream);
+        inputStream.close();
+        fileOutputStream.close();
+
+        // 创建pdf文件
+        String pdfFileName = IdUtil.simpleUUID() + ".pdf";
+        String pdfFilePath = fileUtils.getInterimFilePath(pdfFileName);
+
+        // word转pdf
+        WordUtils.docToPdf(docFilePath, pdfFilePath);
+
+        // 回传pdf流
+        response.setHeader("Accept-Ranges","bytes");
+        ServletOutputStream outputStream = response.getOutputStream();
+        FileInputStream fileInputStream = new FileInputStream(pdfFilePath);
+        IoUtil.copy(fileInputStream, outputStream);
+        fileInputStream.close();
+        outputStream.close();
+
+        // 删除临时文件
+        FileUtil.del(docFilePath);
+        FileUtil.del(pdfFilePath);
     }
 
     /**
