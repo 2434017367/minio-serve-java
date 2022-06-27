@@ -4,8 +4,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.minio.common.result.Result;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
+import io.minio.errors.*;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 /**
@@ -22,13 +27,13 @@ public interface FilesService extends IService<Files> {
      * @param multipartFile
      * @return
      */
-    Result upload(Apps apps, String path, MultipartFile multipartFile);
+    String upload(Apps apps, String path, MultipartFile multipartFile);
 
     /**
      * 删除文件
      * @param fileId
      */
-    Result delFile(Apps apps, String fileId);
+    void delFile(Apps apps, String fileId) throws Exception;
 
     /**
      * 获取文件信息列表
@@ -38,5 +43,18 @@ public interface FilesService extends IService<Files> {
     List<Files> getListByIdList(List<String> idList);
 
     List<Files> getListByIds(String ids);
+
+    /**
+     * 清除临时文件
+     * @return
+     */
+    void clearInterim(Apps apps) throws Exception;
+
+    /**
+     * 解析文件名称
+     * @param filename
+     * @return
+     */
+    Files parseFilename(String filename);
 
 }

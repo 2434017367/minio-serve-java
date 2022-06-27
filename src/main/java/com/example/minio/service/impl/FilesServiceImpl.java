@@ -9,19 +9,20 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.minio.common.enums.FilePathEnum;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
+import com.example.minio.common.utils.FileUtils;
 import com.example.minio.common.utils.office.minio.MinioClientPool;
-import com.example.minio.common.result.Result;
 import com.example.minio.dao.FilesDao;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.service.FilesService;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
-import io.minio.RemoveObjectsArgs;
+import io.minio.*;
 import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
+import io.minio.messages.Item;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -33,6 +34,7 @@ import java.util.*;
  * @email 2434017367@qq.com
  * @date 2022/6/4 18:24
  */
+@Log4j2
 @Service("filesService")
 public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements FilesService {
 
@@ -50,22 +52,18 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
      * @return
      */
     @Override
-    public Result upload(Apps apps, String path, MultipartFile multipartFile) {
+    public String upload(Apps apps, String path, MultipartFile multipartFile) {
         MinioClient minioClient = minioClientPool.getMinioClient();
 
         // 获取文件名和后缀
         String originalFilename = multipartFile.getOriginalFilename();
-        String[] split = originalFilename.split("\\.");
-        if (split.length == 1) {
-            return Result.error("文件无后缀无法判断文件类型");
-        }
-
-        String fileName = split[0];
-        String suffix = split[1].toLowerCase();
+        Files parseFile = parseFilename(originalFilename);
+        String fileName = parseFile.getFileName();
+        String suffix = parseFile.getFileSuffix();
 
         // 判断文件类型是否在白名单中
         if (FileTypeEnum.isNotExistFileType(suffix)){
-            return Result.error("该文件类型不允许上传");
+            throw new RRException("该文件类型不允许上传");
         }
 
         // 生成文件id
@@ -113,7 +111,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
             minioClientPool.closeMinioClient(minioClient);
         }
 
-        return Result.ok(fileId);
+        return fileId;
     }
 
     /**
@@ -121,37 +119,29 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
      * @param fileId
      * @return
      */
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public Result delFile(Apps apps, String fileId) {
+    public void delFile(Apps apps, String fileId) throws Exception {
         Files files = this.getById(fileId);
         if (files == null) {
-            return Result.error("文件不存在");
+            throw new RRException("文件不存在");
         }
 
         MinioClient minioClient = minioClientPool.getMinioClient();
         try {
+            this.removeById(fileId);
+
             String minioBucket = apps.getMinioBucket();
             String wholeFilePath = files.getWholeFilePath();
-            List<DeleteObject> list = new ArrayList<>(1);
-            list.add(new DeleteObject(wholeFilePath));
-            Iterable<io.minio.Result<DeleteError>> results = minioClient.removeObjects(RemoveObjectsArgs
+
+            minioClient.removeObject(RemoveObjectArgs
                     .builder()
                     .bucket(minioBucket)
-                    .objects(list)
+                    .object(wholeFilePath)
                     .build());
-            Iterator<io.minio.Result<DeleteError>> iterator = results.iterator();
-            if (iterator.hasNext()) {
-                return Result.error("文件删除失败");
-            } else {
-                this.removeById(fileId);
-            }
-        } catch (IllegalArgumentException e) {
-            throw new RRException("文件删除失败", e);
         } finally {
             minioClientPool.closeMinioClient(minioClient);
         }
-
-        return Result.ok();
     }
 
     /**
@@ -182,6 +172,74 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
         }else{
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * 清除临时文件
+     * @return
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void clearInterim(Apps apps) throws Exception{
+        String minioBucket = apps.getMinioBucket();
+        MinioClient minioClient = minioClientPool.getMinioClient();
+        String interimPath = FilePathEnum.INTERIM.getPath();
+
+        try {
+            this.remove(new LambdaQueryWrapper<Files>().likeRight(Files::getFilePath, interimPath));
+
+            Iterable<io.minio.Result<Item>> interimFileList = minioClient.listObjects(ListObjectsArgs
+                    .builder()
+                    .bucket(minioBucket)
+                    .prefix(interimPath)
+                    .recursive(true)
+                    .build());
+
+            List<DeleteObject> deleteObjectList = new LinkedList<>();
+            for (io.minio.Result<Item> item : interimFileList) {
+                String objectName = item.get().objectName();
+                log.info("delete object name: {}", objectName);
+                deleteObjectList.add(new DeleteObject(objectName));
+            }
+
+            Iterable<io.minio.Result<DeleteError>> removeResults = minioClient.removeObjects(RemoveObjectsArgs
+                    .builder()
+                    .bucket(minioBucket)
+                    .objects(deleteObjectList)
+                    .build());
+
+            Iterator<io.minio.Result<DeleteError>> iterator = removeResults.iterator();
+            while (iterator.hasNext()) {
+                io.minio.Result<DeleteError> next = iterator.next();
+                DeleteError deleteError = next.get();
+                log.info("deleteError: {}", deleteError.toString());
+            }
+        } finally {
+            minioClientPool.closeMinioClient(minioClient);
+        }
+    }
+
+    /**
+     * 解析文件名称
+     * @param filename
+     * @return
+     */
+    @Override
+    public Files parseFilename(String filename) {
+        // 获取文件名和后缀
+        String[] split = FileUtils.getFileNameSuffix(filename);
+        if (split.length == 1) {
+            throw new RRException("文件无后缀无法判断文件类型");
+        }
+
+        String fileName = split[0];
+        String suffix = split[1].toLowerCase();
+
+        Files files = new Files();
+        files.setFileName(fileName);
+        files.setFileSuffix(suffix);
+
+        return files;
     }
 
 }

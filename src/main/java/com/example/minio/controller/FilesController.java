@@ -60,7 +60,8 @@ public class FilesController {
     public Result upload(@RequestParam(value = "path", required = false) String path,
                          @RequestParam("file") MultipartFile file) {
         Apps appInfo = LoginAppUtils.getAppInfo();
-        return filesService.upload(appInfo, path, file);
+        String fileId = filesService.upload(appInfo, path, file);
+        return Result.ok(fileId);
     }
 
     /**
@@ -218,13 +219,10 @@ public class FilesController {
                          HttpServletResponse response) throws Exception {
         // 获取文件名和后缀
         String originalFilename = multipartFile.getOriginalFilename();
-        String[] split = originalFilename.split("\\.");
-        if (split.length == 1) {
-            throw new RRException("文件无后缀无法判断文件类型");
-        }
+        Files parseFile = filesService.parseFilename(originalFilename);
 
         // 判断文件类型是word类型
-        String suffix = split[1].toLowerCase();
+        String suffix = parseFile.getFileSuffix();
         if (!FileTypeEnum.isWord(suffix)) {
             throw new RRException("文件格式不为word");
         }
@@ -266,10 +264,11 @@ public class FilesController {
      */
     @DeleteMapping("/delFile")
     public Result delFile(@RequestParam("fileId") String fileId,
-                          @RequestParam(value = "isDel", defaultValue = "true") boolean isDel){
+                          @RequestParam(value = "isDel", defaultValue = "true") boolean isDel)
+            throws Exception{
         if (isDel){
             Apps appInfo = LoginAppUtils.getAppInfo();
-            return filesService.delFile(appInfo, fileId);
+            filesService.delFile(appInfo, fileId);
         }
         return Result.ok();
     }
@@ -290,6 +289,17 @@ public class FilesController {
         }
 
         return Result.ok(sysFilesList);
+    }
+
+    /**
+     * 清除临时文件
+     * @return
+     */
+    @GetMapping("/clearInterim")
+    public Result clearInterim() throws Exception{
+        Apps appInfo = LoginAppUtils.getAppInfo();
+        filesService.clearInterim(appInfo);
+        return Result.ok();
     }
 
 }

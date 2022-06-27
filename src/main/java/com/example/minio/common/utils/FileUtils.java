@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.util.List;
 
 /**
  * @author zhy
@@ -68,6 +69,20 @@ public class FileUtils {
             p = p.substring(0, p.length() - 1);
         }
         return p;
+    }
+
+    /**
+     * 获取文件名称和后缀
+     * @param s
+     * @return
+     */
+    public static String[] getFileNameSuffix(String s) {
+        List<String> split = StrUtil.split(s, '.');
+        if (split.size() > 1) {
+            return new String[]{split.get(0), split.get(split.size() - 1)};
+        } else {
+            return new String[]{split.get(0)};
+        }
     }
 
 }
