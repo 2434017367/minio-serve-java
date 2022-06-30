@@ -71,20 +71,18 @@ public class FilesController {
      */
     @GetMapping("/download")
     public void download(@RequestParam("fileId") String fileId,
-                           HttpServletResponse response) {
+                           HttpServletResponse response) throws Exception{
         Files files = filesService.getById(fileId);
         if (files == null) {
             throw new RRException("文件不存在");
         }
 
         MinioClient minioClient = minioClientPool.getMinioClient();
-        InputStream in = null;
-        ServletOutputStream out = null;
         try {
             String wholeFilePath = files.getWholeFilePath();
             String minioBucket = LoginAppUtils.getAppInfo().getMinioBucket();
 
-            in = minioClient.getObject(GetObjectArgs.builder()
+            InputStream inputStream = minioClient.getObject(GetObjectArgs.builder()
                     .bucket(minioBucket)
                     .object(wholeFilePath)
                     .build());
@@ -97,26 +95,12 @@ public class FilesController {
                     new String(fileName.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1)
                     + fileSuffix + "\"");
 
-            out = response.getOutputStream();
-            long length = IOUtils.copyLarge(in, out);
-        } catch (Exception e) {
-            throw new RRException("文件下载失败", e);
+            ServletOutputStream outputStream = response.getOutputStream();
+            IOUtils.copyLarge(inputStream, outputStream);
+            outputStream.close();
+            inputStream.close();
         } finally {
             minioClientPool.closeMinioClient(minioClient);
-            try {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -128,85 +112,61 @@ public class FilesController {
      */
     @GetMapping("/preview")
     public void preview(@RequestParam("fileId") String fileId,
-                          HttpServletResponse response) {
+                          HttpServletResponse response) throws Exception {
         Files files = filesService.getById(fileId);
         if (files == null) {
             throw new RRException("文件不存在");
         }
 
-        String wholeFilePath = files.getWholeFilePath();
-        String fileName = files.getFileName();
-        String fileSuffix = files.getFileSuffix();
-
         MinioClient minioClient = minioClientPool.getMinioClient();
-        InputStream in = null;
-        ServletOutputStream out = null;
-        String docFilePath = null;
         String pdfFilePath = null;
+        String docFilePath = null;
         try {
+            String wholeFilePath = files.getWholeFilePath();
+            String fileName = files.getFileName();
+            String fileSuffix = files.getFileSuffix();
+            FileTypeEnum fileTypeEnum = FileTypeEnum.getTypeBySuffix(fileSuffix);
+
             String minioBucket = LoginAppUtils.getAppInfo().getMinioBucket();
-            in = minioClient.getObject(GetObjectArgs.builder()
+            InputStream inputStream = minioClient.getObject(GetObjectArgs.builder()
                     .bucket(minioBucket)
                     .object(wholeFilePath)
                     .build());
 
-            // 根据不同的文件类型设置响应头
-            FileTypeEnum fileTypeEnum = FileTypeEnum.getTypeBySuffix(fileSuffix);
+            // 判断是不是word，是转pdf
+            if (FileTypeEnum.WORD.equals(fileTypeEnum)) {
+                // 保存doc文件
+                docFilePath = fileUtils.getInterimFilePath();
+                FileOutputStream fileOutputStream = new FileOutputStream(docFilePath);
+                IOUtils.copyLarge(inputStream, fileOutputStream);
+                fileOutputStream.close();
+                inputStream.close();
+
+                // 转化pdf
+                pdfFilePath = fileUtils.getInterimFilePath();
+                WordUtils.docToPdf(docFilePath, pdfFilePath);
+
+                // 封装pdf input
+                inputStream = new FileInputStream(pdfFilePath);
+            }
+
             if (FileTypeEnum.PDF.equals(fileTypeEnum)) {
                 response.setContentType(MediaType.APPLICATION_PDF_VALUE);
             } else if (FileTypeEnum.WORD.equals(fileTypeEnum)) {
                 response.setContentType(MediaType.APPLICATION_PDF_VALUE);
-                // 将文件转为pdf
-                try {
-                    // 保存doc文件
-                    docFilePath = fileUtils.getInterimFilePath();
-                    FileOutputStream fileOutputStream = new FileOutputStream(docFilePath);
-                    IOUtils.copyLarge(in, fileOutputStream);
-                    fileOutputStream.close();
-                    in.close();
-
-                    // 转化pdf
-                    pdfFilePath = fileUtils.getInterimFilePath();
-                    WordUtils.docToPdf(docFilePath, pdfFilePath);
-
-                    // 封装pdf input
-                    in = new FileInputStream(pdfFilePath);
-                } catch (Exception e) {
-                    throw new RRException("pdf转换失败", e);
-                }
             } else if (FileTypeEnum.IMAGE.equals(fileTypeEnum)) {
                 response.setContentType(MediaType.IMAGE_JPEG_VALUE);
             }
-            out = response.getOutputStream();
-            long length = IOUtils.copyLarge(in, out);
-        } catch (Exception e) {
-            if (e.getClass().equals(RRException.class)){
-                throw (RRException) e;
-            } else {
-                throw new RRException("文件预览失败", e);
-            }
+
+            ServletOutputStream outputStream = response.getOutputStream();
+            IoUtil.copy(inputStream, outputStream);
+            outputStream.close();
+            inputStream.close();
         } finally {
             minioClientPool.closeMinioClient(minioClient);
-            try {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException e) {
-                log.error("io流关闭失败");
-            }
-            try {
-                FileUtil.del(docFilePath);
-                FileUtil.del(pdfFilePath);
-            } catch (Exception e) {
-                log.error("临时文件删除失败");
-            }
+            // 删除临时文件
+            FileUtil.del(docFilePath);
+            FileUtil.del(pdfFilePath);
         }
     }
 
