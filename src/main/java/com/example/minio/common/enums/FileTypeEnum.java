@@ -24,7 +24,12 @@ public enum FileTypeEnum {
     /**
      * pdf
      */
-    PDF("pdf", "pdf");
+    PDF("pdf", "pdf"),
+
+    /**
+     * xls
+     */
+    XLS("xls","xlsx");
 
 
     /**
