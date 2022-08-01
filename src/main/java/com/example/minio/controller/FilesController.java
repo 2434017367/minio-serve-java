@@ -72,7 +72,8 @@ public class FilesController {
     @GetMapping("/download")
     public void download(@RequestParam("fileId") String fileId,
                            HttpServletResponse response) throws Exception{
-        Files files = filesService.getById(fileId);
+        String appId = LoginAppUtils.getAppId();
+        Files files = filesService.getFiles(appId, fileId);
         if (files == null) {
             throw new RRException("文件不存在");
         }
@@ -113,7 +114,8 @@ public class FilesController {
     @GetMapping("/preview")
     public void preview(@RequestParam("fileId") String fileId,
                           HttpServletResponse response) throws Exception {
-        Files files = filesService.getById(fileId);
+        String appId = LoginAppUtils.getAppId();
+        Files files = filesService.getFiles(appId, fileId);
         if (files == null) {
             throw new RRException("文件不存在");
         }
@@ -240,7 +242,8 @@ public class FilesController {
      */
     @GetMapping("/getListByIds")
     public Result getListByIds(@RequestParam("ids") String ids){
-        List<Files> sysFilesList = filesService.getListByIds(ids);
+        String appId = LoginAppUtils.getAppId();
+        List<Files> sysFilesList = filesService.getListByIds(appId, ids);
 
         if (CollUtil.isNotEmpty(sysFilesList)) {
             for (Files files : sysFilesList) {

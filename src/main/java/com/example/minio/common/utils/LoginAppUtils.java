@@ -27,6 +27,11 @@ public class LoginAppUtils {
         return apps;
     }
 
+    public static String getAppId() {
+        Apps apps = getAppInfo();
+        return apps.getId();
+    }
+
     public static String getMinioBucket(){
         Apps appInfo = getAppInfo();
         return appInfo.getMinioBucket();

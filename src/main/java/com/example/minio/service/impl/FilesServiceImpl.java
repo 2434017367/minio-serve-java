@@ -45,6 +45,17 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
     private MinioClientPool minioClientPool;
 
     /**
+     * 根据应用id和文件id获取文件信息
+     * @param appId
+     * @param fileId
+     * @return
+     */
+    @Override
+    public Files getFiles(String appId, String fileId) {
+        return this.getOne(new LambdaQueryWrapper<Files>().eq(Files::getAppId, appId).eq(Files::getId, fileId));
+    }
+
+    /**
      * 文件上传
      * @param apps
      * @param path
@@ -122,7 +133,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void delFile(Apps apps, String fileId) throws Exception {
-        Files files = this.getById(fileId);
+        Files files = this.getFiles(apps.getId(), fileId);
         if (files == null) {
             throw new RRException("文件不存在");
         }
@@ -146,15 +157,17 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
 
     /**
      * 获取文件信息列表
+     * @param appId
      * @param idList
      * @return
      */
     @Override
-    public List<Files> getListByIdList(List<String> idList){
+    public List<Files> getListByIdList(String appId, List<String> idList){
         if (CollUtil.isNotEmpty(idList)){
             List<Files> sysFilesList = this.list(new LambdaQueryWrapper<Files>()
-                    .in(Files::getId, idList)
-                    .orderByAsc(Files::getCreateTime));
+                            .eq(Files::getAppId, appId)
+                            .in(Files::getId, idList)
+                            .orderByAsc(Files::getCreateTime));
             return sysFilesList;
         }else{
             return new ArrayList<>();
@@ -162,13 +175,13 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
     }
 
     @Override
-    public List<Files> getListByIds(String ids){
+    public List<Files> getListByIds(String appId, String ids){
         if (StrUtil.isNotEmpty(ids)){
             if(ids.endsWith(",")){
                 ids = ids.substring(0, ids.length() - 1);
             }
             List<String> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
-            return getListByIdList(idList);
+            return getListByIdList(appId, idList);
         }else{
             return new ArrayList<>();
         }
