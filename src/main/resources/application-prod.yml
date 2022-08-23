@@ -55,3 +55,4 @@ minio:
 # 应用的配置数据
 app-config:
   interim-path: files/interim
+  server-url: http://192.168.0.158:8081/minio

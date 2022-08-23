@@ -13,6 +13,7 @@ import com.example.minio.common.utils.office.WordUtils;
 import com.example.minio.common.utils.office.minio.MinioClientPool;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
+import com.example.minio.entity.files.ShareFile;
 import com.example.minio.service.FilesService;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
@@ -27,7 +28,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -263,6 +263,31 @@ public class FilesController {
         Apps appInfo = LoginAppUtils.getAppInfo();
         filesService.clearInterim(appInfo);
         return Result.ok();
+    }
+
+    /**
+     * 获取文件分享链接
+     * @param fileId
+     * @param second
+     * @return
+     */
+    @GetMapping("/getShareFile")
+    public Result getShareFile(@RequestParam("fileId") String fileId,
+                                  @RequestParam("second") long second) {
+        Apps appInfo = LoginAppUtils.getAppInfo();
+        ShareFile shareFile = filesService.getShareFile(appInfo, fileId, second);
+        return Result.ok(shareFile);
+    }
+
+    /**
+     * 分享文件
+     * @param fileId
+     * @return
+     */
+    @GetMapping("/shareFile")
+    public void shareFile(@RequestParam("fileId") String fileId,
+                         HttpServletResponse response) throws Exception{
+        this.download(fileId, response);
     }
 
 }

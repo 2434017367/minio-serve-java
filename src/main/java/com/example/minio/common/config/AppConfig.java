@@ -16,6 +16,10 @@ public class AppConfig {
      * 临时文件目录
      */
     private String interimPath;
+    /**
+     * 服务器地址
+     */
+    private String serverUrl;
 
     public void setInterimPath(String interimPath) {
         if (this.interimPath == null) {
@@ -27,4 +31,11 @@ public class AppConfig {
         return interimPath;
     }
 
+    public String getServerUrl() {
+        return serverUrl;
+    }
+
+    public void setServerUrl(String serverUrl) {
+        this.serverUrl = serverUrl;
+    }
 }

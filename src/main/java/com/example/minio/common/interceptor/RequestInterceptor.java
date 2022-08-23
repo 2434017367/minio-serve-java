@@ -66,11 +66,26 @@ public class RequestInterceptor implements HandlerInterceptor {
             String getAppKey = decode.getAppKey();
             Date stampDate = decode.getStamp();
             if (stampDate != null && getAppKey != null) {
-                // 时间校验
                 Date now = new Date();
-                long between = DateUtil.between(stampDate, now, DateUnit.MINUTE, false);
-                // 时间允许误差前2分钟后5分钟
-                if (between > -5 && between < 2) {
+                // 获取请求uri
+                String requestURI = request.getRequestURI();
+
+                // 校验时间
+                boolean b = false;
+                if (requestURI.lastIndexOf("/shareFile") > 0) {
+                   if (stampDate.compareTo(now) >= 0) {
+                       b = true;
+                   }
+                } else {
+                    // 时间校验
+                    long between = DateUtil.between(stampDate, now, DateUnit.MINUTE, false);
+                    // 时间允许误差前2分钟后5分钟
+                    if (between > -5 && between < 2) {
+                        b = true;
+                    }
+                }
+
+                if (b) {
                     // 校验appKey
                     Apps one = appsService.getOne(new LambdaQueryWrapper<Apps>()
                             .eq(Apps::getAppKey, getAppKey));

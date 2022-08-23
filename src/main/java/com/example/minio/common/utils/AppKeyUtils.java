@@ -17,7 +17,18 @@ public class AppKeyUtils {
      */
     public static Encode encode(String appKey) throws Exception {
         long l = System.currentTimeMillis();
-        String s = String.valueOf(l);
+        return encode(appKey, l);
+    }
+
+    /**
+     * 加密
+     * @param appKey
+     * @param timeMillis
+     * @return
+     * @throws Exception
+     */
+    public static Encode encode(String appKey, long timeMillis) throws Exception {
+        String s = String.valueOf(timeMillis);
 
         String timeStamp = "";
         for (int i = 0; i < s.length(); i++) {

@@ -3,6 +3,7 @@ package com.example.minio.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
+import com.example.minio.entity.files.ShareFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -59,5 +60,14 @@ public interface FilesService extends IService<Files> {
      * @return
      */
     Files parseFilename(String filename);
+
+    /**
+     * 获取文件分享链接
+     * @param apps
+     * @param fileId
+     * @param second
+     * @return
+     */
+    ShareFile getShareFile(Apps apps, String fileId, long second);
 
 }

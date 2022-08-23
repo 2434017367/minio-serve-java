@@ -1,19 +1,24 @@
 package com.example.minio.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.minio.common.config.AppConfig;
 import com.example.minio.common.enums.FilePathEnum;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
+import com.example.minio.common.utils.AppKeyUtils;
 import com.example.minio.common.utils.FileUtils;
+import com.example.minio.common.utils.entity.appKey.Encode;
 import com.example.minio.common.utils.office.minio.MinioClientPool;
 import com.example.minio.dao.FilesDao;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
+import com.example.minio.entity.files.ShareFile;
 import com.example.minio.service.FilesService;
 import io.minio.*;
 import io.minio.messages.DeleteError;
@@ -27,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.*;
 
 /**
@@ -37,6 +43,9 @@ import java.util.*;
 @Log4j2
 @Service("filesService")
 public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements FilesService {
+
+    @Autowired
+    private AppConfig appConfig;
 
     @Autowired
     private FilesDao filesDao;
@@ -253,6 +262,59 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
         files.setFileSuffix(suffix);
 
         return files;
+    }
+
+    /**
+     * 文件分享
+     *
+     * @param apps
+     * @param fileId
+     * @param second
+     * @return
+     */
+    @Override
+    public ShareFile getShareFile(Apps apps, String fileId, long second) {
+        String appId = apps.getId();
+        String appKey = apps.getAppKey();
+
+        Files files = this.getFiles(appId, fileId);
+
+        if (files != null) {
+            long m;
+            if (second < 0) {
+                // 为负数就是永久2154年
+                m = 5814823574516L;
+            } else {
+                long time = System.currentTimeMillis();
+                m = time + (second * 1000L);
+            }
+            try {
+                // 加密
+                Encode encode = AppKeyUtils.encode(appKey, m);
+                String secretKey = encode.getSecretKey();
+                String timeStamp = encode.getTimeStamp();
+
+                // url编码
+                secretKey = URLEncoder.encode(secretKey, "UTF-8");
+                timeStamp = URLEncoder.encode(timeStamp, "UTF-8");
+
+                // 生成url
+                String url = String.format("%s/files/shareFile?fileId=%s&key1=%s&key2=%s",
+                        appConfig.getServerUrl(),
+                        fileId,
+                        secretKey,
+                        timeStamp);
+
+                ShareFile shareFile = new ShareFile();
+                shareFile.setFileUrl(url);
+                shareFile.setFileName(files.getFileName() + "." + files.getFileSuffix());
+                return shareFile;
+            } catch (Exception e) {
+                throw new RRException("加密失败", e);
+            }
+        } else {
+            throw new RRException("文件不存在");
+        }
     }
 
 }
