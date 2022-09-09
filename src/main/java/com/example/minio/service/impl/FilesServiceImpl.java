@@ -11,6 +11,7 @@ import com.example.minio.common.config.AppConfig;
 import com.example.minio.common.enums.FilePathEnum;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
+import com.example.minio.common.utils.AesUtil;
 import com.example.minio.common.utils.AppKeyUtils;
 import com.example.minio.common.utils.FileUtils;
 import com.example.minio.common.utils.entity.appKey.Encode;
@@ -297,6 +298,10 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
                 // url编码
                 secretKey = URLEncoder.encode(secretKey, "UTF-8");
                 timeStamp = URLEncoder.encode(timeStamp, "UTF-8");
+
+                // 对文件id进行加密
+                fileId = AesUtil.encode(timeStamp, fileId);
+                fileId = URLEncoder.encode(fileId, "UTF-8");
 
                 // 生成url
                 String url = String.format("%s/files/shareFile?fileId=%s&key1=%s&key2=%s",

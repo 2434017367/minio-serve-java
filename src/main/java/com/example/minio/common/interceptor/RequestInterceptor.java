@@ -74,6 +74,7 @@ public class RequestInterceptor implements HandlerInterceptor {
                 boolean b = false;
                 if (requestURI.lastIndexOf("/shareFile") > 0) {
                    if (stampDate.compareTo(now) >= 0) {
+                       request.setAttribute("stamp", stamp);
                        b = true;
                    }
                 } else {

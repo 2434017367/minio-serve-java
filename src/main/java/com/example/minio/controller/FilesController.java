@@ -7,6 +7,7 @@ import cn.hutool.core.util.IdUtil;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
 import com.example.minio.common.result.Result;
+import com.example.minio.common.utils.AesUtil;
 import com.example.minio.common.utils.FileUtils;
 import com.example.minio.common.utils.LoginAppUtils;
 import com.example.minio.common.utils.office.WordUtils;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -286,7 +288,14 @@ public class FilesController {
      */
     @GetMapping("/shareFile")
     public void shareFile(@RequestParam("fileId") String fileId,
-                         HttpServletResponse response) throws Exception{
+                          HttpServletRequest request,
+                          HttpServletResponse response) throws Exception{
+
+        String stamp = (String) request.getAttribute("stamp");
+
+        // 解密获取到真正的文件id
+        fileId = AesUtil.decode(stamp, fileId);
+
         this.download(fileId, response);
     }
 
