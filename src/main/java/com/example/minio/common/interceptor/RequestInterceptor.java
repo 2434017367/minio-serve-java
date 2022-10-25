@@ -62,6 +62,7 @@ public class RequestInterceptor implements HandlerInterceptor {
         } catch (Exception e) {
             log.error("解密失败", e);
         }
+        String errMsg = "非法请求";
         if (decode != null) {
             String getAppKey = decode.getAppKey();
             Date stampDate = decode.getStamp();
@@ -94,11 +95,13 @@ public class RequestInterceptor implements HandlerInterceptor {
                         request.setAttribute("app", one);
                         return true;
                     }
+                } else {
+                    errMsg = "时间过期";
                 }
             }
         }
 
-        error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, "非法请求"), null);
+        error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, errMsg), null);
         return false;
     }
 
