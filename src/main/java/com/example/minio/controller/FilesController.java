@@ -288,6 +288,7 @@ public class FilesController {
      */
     @GetMapping("/shareFile")
     public void shareFile(@RequestParam("fileId") String fileId,
+                          @RequestParam(value = "isPreview", defaultValue = "false") boolean isPreview,
                           HttpServletRequest request,
                           HttpServletResponse response) throws Exception{
 
@@ -296,7 +297,11 @@ public class FilesController {
         // 解密获取到真正的文件id
         fileId = AesUtil.decode(stamp, fileId);
 
-        this.download(fileId, response);
+        if (isPreview) {
+            this.preview(fileId, response);
+        } else {
+            this.download(fileId, response);
+        }
     }
 
 }
