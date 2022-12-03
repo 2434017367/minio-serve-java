@@ -2,6 +2,8 @@
 ## 简介
 本服务基于minio高可用对象存储开发的一套spring boot文件存储服务。数据库采用mysql，持久层框架采用mybatis plus，很多工具类使用了一个更好用的java工具库Hutool。
 
+项目github地址：https://github.com/2434017367/minio-serve-java
+
 ---
 * minio https：//www.minio.org.cn/
 * MyBatis Plus：https://baomidou.com/
