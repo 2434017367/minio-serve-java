@@ -1,4 +1,3 @@
-# 快速开始
 ## 简介
 本服务基于minio高可用对象存储开发的一套spring boot文件存储服务。数据库采用mysql，持久层框架采用mybatis plus，很多工具类使用了一个更好用的java工具库Hutool。
 
@@ -10,7 +9,7 @@
 * Hutool：https://hutool.cn/docs/#/
 
 ## 安装
-###docker安装minio
+### docker安装minio
 这里只对docker环境进行简单描述，其他方法不一一赘述。
 
 ---
