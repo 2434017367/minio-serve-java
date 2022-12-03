@@ -4,9 +4,9 @@
 项目github地址：https://github.com/2434017367/minio-serve-java
 
 ---
-* minio https：//www.minio.org.cn/
-* MyBatis Plus：https://baomidou.com/
-* Hutool：https://hutool.cn/docs/#/
+* [minio](https://www.minio.org.cn/)
+* [MyBatis Plus](https://baomidou.com/)
+* [Hutool](https://hutool.cn/docs/#/)
 
 ## 安装
 ### docker安装minio
@@ -16,6 +16,7 @@
 #### 1. 搜索和下载minio镜像
 
 ![](readme_images/2_1.png)
+
 #### 2. 运行minio镜像
 
 ```docker
@@ -26,6 +27,7 @@ docker run -d -p 9000:9000 -p 9001:9001 --name minio
 -v D:\minio\config:/root/.minio 
 minio/minio server /data --console-address ":9001"
 ```
+
 > -d: 后台运行容器，并返回容器ID；
 > 
 > -p: 指定端口映射，格式为：主机(宿主)端口:容器端口
@@ -97,7 +99,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 > 
 > endpoint：minio运行的地址
 > 
-> interim-path：临时文件地址，用于临时文件的存储比如word预览时要转成pdf，此时pdf文件就是临时文件，后面会讲述临时文件的清理。[api使用说明](#### 6. 清除临时文件)
+> interim-path：临时文件地址，用于临时文件的存储比如word预览时要转成pdf，此时pdf文件就是临时文件，后面会讲述临时文件的清理。[api使用说明](# 6. 清除临时文件)
 > 
 > server-url：服务运行的地址，用于生成文件分享时的文件地址，或其他用途。
 
