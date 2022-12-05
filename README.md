@@ -86,14 +86,22 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 ### 运行minio-serve-java
 
-配置yml文件
+#### 1. 配置minio
 
----
+![创建对象存储桶](readme_images/2_4.png)
+
+为每个应用创建一个对象存储桶，便于后期管理。
+
+![创建服务账号](readme_images/2_5.png)
+
+为每个应用创建一个服务账号，便于后期管理。
+
+#### 2. 配置yml文件
 
 ![](readme_images/2_3.png)
-> access-key：刚才配置的登录账号
+> access-key：应用服务账号用户名
 > 
-> secret-key：刚才配置的登录密码
+> secret-key：应用服务账号密钥
 > 
 > endpoint：minio运行的地址
 > 
@@ -108,6 +116,53 @@ SET FOREIGN_KEY_CHECKS = 1;
 ---
 
 ### maven引用
+
+#### 1. GitHub Maven仓库导入
+你需要先设置 Maven 拥有 GitHub 的 Package 权限
+1. 创建具有相应权限的新 token。
+2. 设置 read:packages 权限。
+![](readme_images/2_6.png)
+3. 在 ~/.m2/setting.xml 服务器列表中添加 server
+```xml
+   <server>
+   <id>github</id>
+   <username>github_用户名</username>
+   <password>github_token</password>
+   </server>
+```
+4. 在 pom .xml 中设置repository节点
+```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <name>The Maven Repository on Github</name>
+        <url>https://maven.pkg.github.com/2434017367/minio-java-start/</url>
+    </repository>
+</repositories>
+```
+5. 安装依赖
+```xml
+<dependency>
+    <groupId>minio.java</groupId>
+    <artifactId>minio-java-start</artifactId>
+    <version>最新版本</version>
+</dependency>
+```
+
+#### 2. 本地安装
+1. 下载最新jar：https://github.com/2434017367/minio-java-start/packages/1738437
+![](readme_images/2_7.png)
+2. 保存到项目的resources下lib目录中，无改目录则新建一个。
+3. 安装依赖
+```xml
+ <dependency>
+    <groupId>minio.java</groupId>
+    <artifactId>minio-java-start</artifactId>
+    <version>最新版本</version>
+    <scope>system</scope>
+    <systemPath>${pom.basedir}/src/main/resources/lib/jar名称</systemPath>
+</dependency>
+```
 
 ### 初始化配置
 
