@@ -26,6 +26,10 @@ public enum ResultCodeEnum {
      */
     ERROR_PERMISSION(503, "权限不足"),
     /**
+     * 时间校验错误
+     */
+    ERROR_CHECK_DATE(507, "时间校验错误"),
+    /**
      * token错误
      */
     ERROR_TOKEN(504, "token错误"),

@@ -62,7 +62,10 @@ public class RequestInterceptor implements HandlerInterceptor {
         } catch (Exception e) {
             log.error("解密失败", e);
         }
+
+        ResultCodeEnum resultCodeEnum = ResultCodeEnum.ERROR_PERMISSION;
         String errMsg = "非法请求";
+
         if (decode != null) {
             String getAppKey = decode.getAppKey();
             Date stampDate = decode.getStamp();
@@ -96,12 +99,14 @@ public class RequestInterceptor implements HandlerInterceptor {
                         return true;
                     }
                 } else {
+                    resultCodeEnum = ResultCodeEnum.ERROR_CHECK_DATE;
                     errMsg = "时间过期";
                 }
             }
         }
 
-        error(response, Result.error(ResultCodeEnum.ERROR_PERMISSION, errMsg), null);
+        error(response, Result.error(resultCodeEnum, errMsg), null);
+
         return false;
     }
 
