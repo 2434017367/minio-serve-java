@@ -20,9 +20,12 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>minio-serve-java</name>
     <description>minio-serve-java</description>
+
     <properties>
         <java.version>1.8</java.version>
+        <hutool.version>5.8.5</hutool.version>
     </properties>
+
     <dependencies>
         <!--web容器-->
         <dependency>
@@ -87,8 +90,13 @@
         <!--hutool工具类-->
         <dependency>
             <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>5.5.1</version>
+            <artifactId>hutool-core</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-http</artifactId>
+            <version>${hutool.version}</version>
         </dependency>
 
         <dependency>
