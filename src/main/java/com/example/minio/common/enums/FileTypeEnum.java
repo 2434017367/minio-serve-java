@@ -29,7 +29,12 @@ public enum FileTypeEnum {
     /**
      * xls
      */
-    XLS("xls","xlsx");
+    XLS("xls","xlsx"),
+
+    /**
+     * 视频
+     */
+    video("video", "mp4");
 
 
     /**

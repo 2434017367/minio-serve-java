@@ -26,28 +26,11 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @time: 9:59
  */
 @Log4j2
-public class ReqLogInterceptor implements HandlerInterceptor, DisposableBean {
+public class ReqLogInterceptor implements HandlerInterceptor {
 
     private static final Gson gson = new Gson();
 
     private static final ThreadLocal<Long> threadLocal = new ThreadLocal<Long>();
-
-    /**
-     * 保存请求日志线程池
-     */
-    private ExecutorService executor;
-
-    /**
-     * 构造函数 初始化保存请求日志线程池
-     */
-    public ReqLogInterceptor() {
-        log.info(getClass().getName() + " 构建初始化线程池");
-        executor = ExecutorBuilder.create()
-                .setCorePoolSize(3)
-                .setMaxPoolSize(10)
-                .setWorkQueue(new LinkedBlockingQueue<>(10))
-                .build();
-    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -105,36 +88,24 @@ public class ReqLogInterceptor implements HandlerInterceptor, DisposableBean {
             String finalParams = params;
             String finalBody = body;
             MyExceptionInfo myExceptionInfo = MyExceptionInfo.getExceptionInfo();
-            Future<?> submit = executor.submit(() -> {
-                int responseStatus = response.getStatus();
-                // 日志封装
-                String logs = String.format("uri：%s，method：%s，ip：%s，执行耗时：%dms，params：%s, body：%s", requestURI, method, ip, duration, finalParams, finalBody);
-                // 查看是否有异常信息
-                if (myExceptionInfo != null) {
-                    logs = "errCode：" + myExceptionInfo.getCode() + "，errMsg：" + myExceptionInfo.getMsg() + "，" + logs;
-                    log.error(logs, myExceptionInfo.getE());
-                } else if (responseStatus != 200) {
-                    logs = "httpStatus：" + responseStatus + "，" + logs;
-                    log.error(logs);
-                } else {
-                    log.info(logs);
-                }
-            });
 
-            submit.get();
+            int responseStatus = response.getStatus();
+            // 日志封装
+            String logs = String.format("uri：%s，method：%s，ip：%s，执行耗时：%dms，params：%s, body：%s", requestURI, method, ip, duration, finalParams, finalBody);
+            // 查看是否有异常信息
+            if (myExceptionInfo != null) {
+                logs = "errCode：" + myExceptionInfo.getCode() + "，errMsg：" + myExceptionInfo.getMsg() + "，" + logs;
+                log.error(logs, myExceptionInfo.getE());
+            } else if (responseStatus != 200) {
+                logs = "httpStatus：" + responseStatus + "，" + logs;
+                log.error(logs);
+            } else {
+                log.info(logs);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             log.error("请求日志处理错误!", e);
         }
-    }
-
-    /**
-     * 对象销毁 关闭线程池
-     * @throws Exception
-     */
-    @Override
-    public void destroy() throws Exception {
-        executor.shutdown();
     }
 
 }
