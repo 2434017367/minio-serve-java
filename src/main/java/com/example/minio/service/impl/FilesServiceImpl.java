@@ -1,14 +1,9 @@
 package com.example.minio.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpStatus;
-import cn.hutool.http.HttpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.minio.common.config.AppConfig;
@@ -37,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
 
@@ -106,19 +102,15 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
      */
     @Override
     public String uploadUrl(Apps apps, String path, String filename, String fileurl) {
-        // 根据文件链接获取流
-        HttpRequest get = HttpUtil.createGet(fileurl);
-        HttpResponse execute = get.execute();
-        int status = execute.getStatus();
-        if (HttpStatus.HTTP_OK == status) {
-            InputStream inputStream = execute.bodyStream();
+        try {
+            InputStream inputStream = new URL(fileurl).openStream();
 
             // 保存文件
             String fileId = saveFile(apps, path, filename, inputStream);
 
             // 返回文件id
             return fileId;
-        } else {
+        } catch (IOException e) {
             throw new RRException("通过文件链接获取文件失败");
         }
     }
