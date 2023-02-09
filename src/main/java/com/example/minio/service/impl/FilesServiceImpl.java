@@ -5,6 +5,10 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpStatus;
+import cn.hutool.http.HttpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.minio.common.config.AppConfig;
@@ -74,10 +78,55 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
      */
     @Override
     public String upload(Apps apps, String path, MultipartFile multipartFile) {
+        // 获取文件名
+        String originalFilename = multipartFile.getOriginalFilename();
+        // 获取文件流
+        InputStream inputStream = null;
+        try {
+            inputStream = multipartFile.getInputStream();
+        } catch (IOException e) {
+            throw new RRException("上传文件获取流失败", e);
+        }
+
+        // 保存文件
+        String fileId = saveFile(apps, path, originalFilename, inputStream);
+
+        // 返回文件id
+        return fileId;
+    }
+
+    /**
+     * url文件上传
+     *
+     * @param apps
+     * @param path
+     * @param filename
+     * @param fileurl
+     * @return
+     */
+    @Override
+    public String uploadUrl(Apps apps, String path, String filename, String fileurl) {
+        // 根据文件链接获取流
+        HttpRequest get = HttpUtil.createGet(fileurl);
+        HttpResponse execute = get.execute();
+        int status = execute.getStatus();
+        if (HttpStatus.HTTP_OK == status) {
+            InputStream inputStream = execute.bodyStream();
+
+            // 保存文件
+            String fileId = saveFile(apps, path, filename, inputStream);
+
+            // 返回文件id
+            return fileId;
+        } else {
+            throw new RRException("通过文件链接获取文件失败");
+        }
+    }
+
+    private String saveFile(Apps apps, String path, String originalFilename, InputStream in) {
         MinioClient minioClient = minioClientPool.getMinioClient();
 
         // 获取文件名和后缀
-        String originalFilename = multipartFile.getOriginalFilename();
         Files parseFile = parseFilename(originalFilename);
         String fileName = parseFile.getFileName();
         String suffix = parseFile.getFileSuffix();
@@ -99,14 +148,11 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
         path += ("/" + dateFormat);
 
         // 上传到minio中
-        InputStream in = null;
         try {
-            in = multipartFile.getInputStream();
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(apps.getMinioBucket())
                     .object(path + "/" + fileId)
                     .stream(in, in.available(), -1)
-                    .contentType(multipartFile.getContentType())
                     .build()
             );
 

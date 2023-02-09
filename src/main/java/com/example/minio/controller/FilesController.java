@@ -67,6 +67,22 @@ public class FilesController {
     }
 
     /**
+     * url文件上传
+     * @param path
+     * @param filename
+     * @param fileurl
+     * @return
+     */
+    @PostMapping("/uploadUrl")
+    public Result uploadUrl(@RequestParam(value = "path", required = false) String path,
+                            @RequestParam("filename") String filename,
+                            @RequestParam("fileurl") String fileurl) {
+        Apps appInfo = LoginAppUtils.getAppInfo();
+        String fileId = filesService.uploadUrl(appInfo, path, filename, fileurl);
+        return Result.ok(fileId);
+    }
+
+    /**
      * 下载文件
      * @param fileId
      * @return

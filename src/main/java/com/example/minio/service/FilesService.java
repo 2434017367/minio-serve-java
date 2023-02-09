@@ -1,9 +1,12 @@
 package com.example.minio.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.minio.common.result.Result;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -31,6 +34,16 @@ public interface FilesService extends IService<Files> {
      * @return
      */
     String upload(Apps apps, String path, MultipartFile multipartFile);
+
+    /**
+     * url文件上传
+     * @param apps
+     * @param path
+     * @param filename
+     * @param fileurl
+     * @return
+     */
+    String uploadUrl(Apps apps, String path, String filename, String fileurl);
 
     /**
      * 删除文件
