@@ -16,9 +16,9 @@ import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
 import com.example.minio.service.FilesService;
-import io.minio.GetObjectArgs;
-import io.minio.MinioClient;
+import io.minio.*;
 import lombok.extern.log4j.Log4j2;
+import okhttp3.Headers;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -101,13 +101,22 @@ public class FilesController {
             String wholeFilePath = files.getWholeFilePath();
             String minioBucket = LoginAppUtils.getAppInfo().getMinioBucket();
 
+            // 获取minio文件流
             InputStream inputStream = minioClient.getObject(GetObjectArgs.builder()
                     .bucket(minioBucket)
                     .object(wholeFilePath)
                     .build());
 
+            // 获取minio文件字节大小
+            StatObjectResponse statObjectResponse = minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(minioBucket)
+                    .object(wholeFilePath)
+                    .build());
+            long byteSize = statObjectResponse.size();
+
             //设置相关参数
             response.setHeader("Accept-Ranges","bytes");
+            response.setContentLengthLong(byteSize);
             String fileName = files.getFileName();
             String fileSuffix = "." + files.getFileSuffix();
             response.setHeader("Content-Disposition","attachment;filename=\""+

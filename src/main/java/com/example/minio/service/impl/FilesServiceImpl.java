@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.minio.common.config.AppConfig;
 import com.example.minio.common.enums.FilePathEnum;
@@ -32,6 +33,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
@@ -76,16 +79,19 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
     public String upload(Apps apps, String path, MultipartFile multipartFile) {
         // 获取文件名
         String originalFilename = multipartFile.getOriginalFilename();
+
         // 获取文件流
         InputStream inputStream = null;
+        String fileId;
         try {
             inputStream = multipartFile.getInputStream();
+
+            // 保存文件
+            fileId = saveFile(apps, path, originalFilename, inputStream);
         } catch (IOException e) {
             throw new RRException("上传文件获取流失败", e);
         }
 
-        // 保存文件
-        String fileId = saveFile(apps, path, originalFilename, inputStream);
 
         // 返回文件id
         return fileId;
@@ -103,10 +109,22 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
     @Override
     public String uploadUrl(Apps apps, String path, String filename, String fileurl) {
         try {
-            InputStream inputStream = new URL(fileurl).openStream();
+            URL url = new URL(fileurl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            // 设置超时间为60秒
+            conn.setConnectTimeout(10 * 1000);
+            // 防止屏蔽程序抓取而返回403错误
+            conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+
+            // 文件长度
+            long contentLengthLong = conn.getContentLengthLong();
+
+            // 得到输入流
+            InputStream inputStream = conn.getInputStream();
+
 
             // 保存文件
-            String fileId = saveFile(apps, path, filename, inputStream);
+            String fileId = saveFile(apps, path, filename, inputStream, contentLengthLong);
 
             // 返回文件id
             return fileId;
@@ -115,7 +133,11 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
         }
     }
 
-    private String saveFile(Apps apps, String path, String originalFilename, InputStream in) {
+    private String saveFile(Apps apps, String path, String originalFilename, InputStream in) throws IOException {
+        return saveFile(apps, path, originalFilename, in, in.available());
+    }
+
+    private String saveFile(Apps apps, String path, String originalFilename, InputStream in, long byteLength) {
         MinioClient minioClient = minioClientPool.getMinioClient();
 
         // 获取文件名和后缀
@@ -144,7 +166,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(apps.getMinioBucket())
                     .object(path + "/" + fileId)
-                    .stream(in, in.available(), -1)
+                    .stream(in, byteLength, -1)
                     .build()
             );
 
