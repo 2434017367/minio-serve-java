@@ -18,7 +18,6 @@ import com.example.minio.entity.files.ShareFile;
 import com.example.minio.service.FilesService;
 import io.minio.*;
 import lombok.extern.log4j.Log4j2;
-import okhttp3.Headers;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -185,6 +184,8 @@ public class FilesController {
                 response.setContentType(MediaType.APPLICATION_PDF_VALUE);
             } else if (FileTypeEnum.IMAGE.equals(fileTypeEnum)) {
                 response.setContentType(MediaType.IMAGE_JPEG_VALUE);
+            } else if (FileTypeEnum.VIDEO.equals(fileTypeEnum)) {
+                response.setContentType("video/" + fileSuffix);
             }
 
             ServletOutputStream outputStream = response.getOutputStream();

@@ -34,7 +34,7 @@ public enum FileTypeEnum {
     /**
      * 视频
      */
-    video("video", "mp4");
+    VIDEO("video", "mp4");
 
 
     /**
