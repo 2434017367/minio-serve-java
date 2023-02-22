@@ -5,10 +5,12 @@ import com.example.minio.common.result.Result;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -34,6 +36,16 @@ public interface FilesService extends IService<Files> {
      * @return
      */
     String upload(Apps apps, String path, MultipartFile multipartFile);
+
+    /**
+     * 文件上传
+     * @param apps
+     * @param path
+     * @param fileName  文件名
+     * @param inputStream  文件流
+     * @return
+     */
+    String upload(Apps apps, String path, String fileName, InputStream inputStream, long byteLength);
 
     /**
      * url文件上传
@@ -82,5 +94,12 @@ public interface FilesService extends IService<Files> {
      * @return
      */
     ShareFile getShareFile(Apps apps, String fileId, long second);
+
+    /**
+     * 获取跳过认证文件上传的上传链接
+     * @param path
+     * @return
+     */
+    String getSkipAuthFileUploadUrl(Apps apps, String path);
 
 }

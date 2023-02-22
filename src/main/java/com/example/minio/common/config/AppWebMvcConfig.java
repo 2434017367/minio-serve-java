@@ -25,9 +25,10 @@ public class AppWebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(new ReqLogInterceptor())
                 .addPathPatterns("/**")
                 .excludePathPatterns("/error/**");
+
         registry.addInterceptor(new RequestInterceptor())
                 .addPathPatterns("/**")
-                .excludePathPatterns("/error/**");
+                .excludePathPatterns("/error/**", "/files/skipAuthFileUpload");
     }
 
     // 设置跨域访问

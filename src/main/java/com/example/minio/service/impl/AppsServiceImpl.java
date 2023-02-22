@@ -1,5 +1,6 @@
 package com.example.minio.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.minio.dao.AppsDao;
 import com.example.minio.entity.apps.Apps;
@@ -20,4 +21,11 @@ public class AppsServiceImpl extends ServiceImpl<AppsDao, Apps> implements AppsS
     @Autowired
     private AppsDao appsDao;
 
+    @Override
+    public Apps getByAppKey(String appKey) {
+        Apps one = this.getOne(new LambdaQueryWrapper<Apps>()
+                .eq(Apps::getAppKey, appKey));
+
+        return one;
+    }
 }

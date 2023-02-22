@@ -2,17 +2,16 @@ package com.example.minio.common.interceptor;
 
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.example.minio.common.utils.entity.appKey.Decode;
 import com.example.minio.common.exception.MyExceptionInfo;
 import com.example.minio.common.result.Result;
 import com.example.minio.common.result.ResultCodeEnum;
 import com.example.minio.common.utils.AppKeyUtils;
 import com.example.minio.common.utils.SpringContextHolder;
+import com.example.minio.common.utils.entity.appKey.Decode;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.service.AppsService;
-import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.method.HandlerMethod;
@@ -28,8 +27,6 @@ import java.util.Date;
  */
 @Log4j2
 public class RequestInterceptor implements HandlerInterceptor {
-
-    private static final Gson gson = new Gson();
 
     private AppsService appsService = SpringContextHolder.getBean(AppsService.class);
 
@@ -92,8 +89,7 @@ public class RequestInterceptor implements HandlerInterceptor {
 
                 if (b) {
                     // 校验appKey
-                    Apps one = appsService.getOne(new LambdaQueryWrapper<Apps>()
-                            .eq(Apps::getAppKey, getAppKey));
+                    Apps one = appsService.getByAppKey(getAppKey);
                     if (one != null) {
                         request.setAttribute("app", one);
                         return true;
@@ -119,7 +115,7 @@ public class RequestInterceptor implements HandlerInterceptor {
             httpServletResponse.setHeader("Cache-Control", "no-cache");
             httpServletResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             PrintWriter out = httpServletResponse.getWriter();
-            String res = gson.toJson(result);
+            String res = JSONObject.toJSONString(result);
             out.write(res);
             out.flush();
             out.close();

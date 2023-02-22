@@ -9,4 +9,7 @@ import com.example.minio.entity.apps.Apps;
  * @date 2022/6/5 12:39
  */
 public interface AppsService extends IService<Apps> {
+
+    Apps getByAppKey(String appKey);
+
 }

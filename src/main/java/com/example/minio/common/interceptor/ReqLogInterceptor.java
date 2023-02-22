@@ -1,23 +1,19 @@
 package com.example.minio.common.interceptor;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.thread.ExecutorBuilder;
+import com.alibaba.druid.support.json.JSONUtils;
+import com.alibaba.fastjson.JSONObject;
 import com.example.minio.common.exception.MyExceptionInfo;
 import com.example.minio.common.utils.IPUtil;
 import com.example.minio.common.utils.RequestUtils;
 import com.example.minio.common.xss.BodyReaderHttpServletRequestWrapper;
-import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @email 2434017367@qq.com
@@ -27,8 +23,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @Log4j2
 public class ReqLogInterceptor implements HandlerInterceptor {
-
-    private static final Gson gson = new Gson();
 
     private static final ThreadLocal<Long> threadLocal = new ThreadLocal<Long>();
 
@@ -68,7 +62,7 @@ public class ReqLogInterceptor implements HandlerInterceptor {
             String params = null;
             Map<String, String[]> parameterMap = request.getParameterMap();
             if (CollUtil.isNotEmpty(parameterMap)) {
-                params = gson.toJson(parameterMap);
+                params = JSONObject.toJSONString(parameterMap);
             }
 
             // 获取请求body

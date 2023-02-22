@@ -4,8 +4,8 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.minio.common.config.AppConfig;
 import com.example.minio.common.enums.FilePathEnum;
@@ -17,6 +17,7 @@ import com.example.minio.common.utils.FileUtils;
 import com.example.minio.common.utils.entity.appKey.Encode;
 import com.example.minio.common.utils.office.minio.MinioClientPool;
 import com.example.minio.dao.FilesDao;
+import com.example.minio.entity.SkipAuthFileUploadEntity;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
@@ -34,7 +35,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
@@ -92,6 +92,30 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
             throw new RRException("上传文件获取流失败", e);
         }
 
+
+        // 返回文件id
+        return fileId;
+    }
+
+    /**
+     * 文件上传
+     *
+     * @param apps
+     * @param path
+     * @param fileName    文件名
+     * @param inputStream 文件流
+     * @return
+     */
+    @Override
+    public String upload(Apps apps, String path, String fileName, InputStream inputStream, long byteLength) {
+        String fileId;
+
+        try {
+            // 保存文件
+            fileId = saveFile(apps, path, fileName, inputStream, byteLength);
+        } catch (Exception e) {
+            throw new RRException("上传文件获取流失败", e);
+        }
 
         // 返回文件id
         return fileId;
@@ -379,6 +403,40 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
             }
         } else {
             throw new RRException("文件不存在");
+        }
+    }
+
+    /**
+     * 获取跳过认证文件上传的上传链接
+     *
+     * @param path
+     * @return
+     */
+    @Override
+    public String getSkipAuthFileUploadUrl(Apps apps, String path) {
+        SkipAuthFileUploadEntity skipAuthFileUploadEntity = new SkipAuthFileUploadEntity();
+        skipAuthFileUploadEntity.setAppKey(apps.getAppKey());
+        skipAuthFileUploadEntity.setFilePath(path);
+        String json = JSONObject.toJSONString(skipAuthFileUploadEntity);
+        try {
+            // 加密
+            Encode encode = AppKeyUtils.encode(json);
+            String secretKey = encode.getSecretKey();
+            String timeStamp = encode.getTimeStamp();
+
+            // url编码
+            secretKey = URLEncoder.encode(secretKey, "UTF-8");
+            timeStamp = URLEncoder.encode(timeStamp, "UTF-8");
+
+            // 生成url
+            String url = String.format("%s/files/skipAuthFileUpload?key=%s&stamp=%s",
+                    appConfig.getServerUrl(),
+                    secretKey,
+                    timeStamp);
+
+            return url;
+        } catch (Exception e) {
+            throw new RRException("加密失败");
         }
     }
 

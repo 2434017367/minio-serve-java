@@ -1,20 +1,27 @@
 package com.example.minio.controller;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.IdUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
 import com.example.minio.common.result.Result;
 import com.example.minio.common.utils.AesUtil;
+import com.example.minio.common.utils.AppKeyUtils;
 import com.example.minio.common.utils.FileUtils;
 import com.example.minio.common.utils.LoginAppUtils;
+import com.example.minio.common.utils.entity.appKey.Decode;
 import com.example.minio.common.utils.office.WordUtils;
 import com.example.minio.common.utils.office.minio.MinioClientPool;
+import com.example.minio.entity.SkipAuthFileUploadEntity;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
+import com.example.minio.service.AppsService;
 import com.example.minio.service.FilesService;
 import io.minio.*;
 import lombok.extern.log4j.Log4j2;
@@ -24,6 +31,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +39,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -51,6 +60,9 @@ public class FilesController {
 
     @Autowired
     private FileUtils fileUtils;
+
+    @Autowired
+    private AppsService appsService;
 
     /**
      * 文件上传
@@ -88,6 +100,7 @@ public class FilesController {
      */
     @GetMapping("/download")
     public void download(@RequestParam("fileId") String fileId,
+                           HttpServletRequest request,
                            HttpServletResponse response) throws Exception{
         String appId = LoginAppUtils.getAppId();
         Files files = filesService.getFiles(appId, fileId);
@@ -116,11 +129,24 @@ public class FilesController {
             //设置相关参数
             response.setHeader("Accept-Ranges","bytes");
             response.setContentLengthLong(byteSize);
+
+            String userAgent = request.getHeader("User-Agent");
+            log.info("userAgent:" + userAgent);
             String fileName = files.getFileName();
             String fileSuffix = "." + files.getFileSuffix();
-            response.setHeader("Content-Disposition","attachment;filename=\""+
-                    new String(fileName.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1)
-                    + fileSuffix + "\"");
+            String formFileName = fileName + fileSuffix;
+            log.info("formFileName:" + formFileName);
+
+            // 针对IE或者以IE为内核的浏览器：
+            if (userAgent.contains("MSIE") || userAgent.contains("Trident")) {
+                formFileName = java.net.URLEncoder.encode(formFileName, "UTF-8");
+            } else {
+                // 非IE浏览器的处理：
+                formFileName = new String(formFileName.getBytes("UTF-8"), "ISO-8859-1");
+            }
+            response.setHeader("Content-disposition",String.format("attachment; filename=\"%s\"", formFileName));
+            response.setContentType("multipart/form-data");
+            response.setCharacterEncoding("UTF-8");
 
             ServletOutputStream outputStream = response.getOutputStream();
             IOUtils.copyLarge(inputStream, outputStream);
@@ -326,7 +352,60 @@ public class FilesController {
         if (isPreview) {
             this.preview(fileId, response);
         } else {
-            this.download(fileId, response);
+            this.download(fileId, request, response);
+        }
+    }
+
+    /**
+     * 获取跳过认证文件上传的上传链接
+     * @param path
+     * @return
+     */
+    @GetMapping("/getSkipAuthFileUploadUrl")
+    public Result getSkipAuthFileUploadUrl(@RequestParam(value = "path", required = false) String path) {
+        Apps appInfo = LoginAppUtils.getAppInfo();
+        String uploadUrl = filesService.getSkipAuthFileUploadUrl(appInfo, path);
+        return Result.ok(uploadUrl);
+    }
+
+    /**
+     * 跳过认证文件上传
+     * @param key
+     * @param stamp
+     */
+    @PostMapping("/skipAuthFileUpload")
+    public Result skipAuthFileUpload(@RequestParam("key") String key,
+                                     @RequestParam("stamp") String stamp,
+                                     @RequestParam("fileName") String fileName,
+                                     HttpServletRequest request) {
+        try {
+            Decode decode = AppKeyUtils.decode(key, stamp);
+            Date date = decode.getStamp();
+
+            // 校验时间
+            long between = DateUtil.between(date, new Date(), DateUnit.MINUTE, false);
+            // 时间允许误差前2分钟后5分钟
+            if (between > -5 && between < 2) {
+                String json = decode.getAppKey();
+                SkipAuthFileUploadEntity skipAuthFileUploadEntity = JSONObject.parseObject(json, SkipAuthFileUploadEntity.class);
+
+                String appKey = skipAuthFileUploadEntity.getAppKey();
+                Apps apps = appsService.getByAppKey(appKey);
+
+                if (apps != null) {
+                    long contentLengthLong = request.getContentLengthLong();
+                    ServletInputStream inputStream = request.getInputStream();
+                    String filePath = skipAuthFileUploadEntity.getFilePath();
+                    String fileId = filesService.upload(apps, filePath, fileName, inputStream, contentLengthLong);
+                    return Result.ok(fileId);
+                } else {
+                    throw new RRException("app不存在");
+                }
+            } else {
+                throw new RRException("请求超时");
+            }
+        } catch (Exception e) {
+            throw new RRException("解密失败", e);
         }
     }
 
