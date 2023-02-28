@@ -1,13 +1,9 @@
 package com.example.minio.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.example.minio.common.result.Result;
 import com.example.minio.entity.apps.Apps;
 import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -56,6 +52,15 @@ public interface FilesService extends IService<Files> {
      * @return
      */
     String uploadUrl(Apps apps, String path, String filename, String fileurl);
+
+    /**
+     * 批量保存文件
+     * @param apps
+     * @param path
+     * @param filePathList
+     * @return
+     */
+    List<String> batchSavePathFile(Apps apps, String path, List<String> filePathList) throws Exception;
 
     /**
      * 删除文件

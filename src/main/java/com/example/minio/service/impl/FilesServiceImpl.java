@@ -23,21 +23,29 @@ import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
 import com.example.minio.service.FilesService;
 import io.minio.*;
+import io.minio.errors.*;
 import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
 import io.minio.messages.Item;
 import lombok.extern.log4j.Log4j2;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 /**
  * @author zhy
@@ -217,6 +225,74 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
         }
 
         return fileId;
+    }
+
+    /**
+     * 批量保存文件
+     *
+     * @param apps
+     * @param path
+     * @param filePathList
+     * @return
+     */
+    @Override
+    public List<String> batchSavePathFile(Apps apps, String path, List<String> filePathList) throws Exception{
+        // 保存文件列表
+        List<Files> filesList = Collections.synchronizedList(new ArrayList<>(filePathList.size()));
+        // 多线程保存
+        CountDownLatch countDownLatch = new CountDownLatch(filePathList.size());
+        for (String filePath : filePathList) {
+            new Thread(() -> {
+                MinioClient minioClient = minioClientPool.getMinioClient();
+
+                FileInputStream fis = null;
+                try {
+                    File file = new File(filePath);
+                    fis = new FileInputStream(file);
+
+                    // 生成文件id
+                    String fileId = IdUtil.simpleUUID();
+                    minioClient.putObject(PutObjectArgs.builder()
+                            .bucket(apps.getMinioBucket())
+                            .object(path + "/" + fileId)
+                            .stream(fis, file.length(), -1)
+                            .build()
+                    );
+
+                    String fileName = filePath.substring(filePath.lastIndexOf(File.separator) + 1);
+                    // 保存文件信息
+                    Files files = this.parseFilename(fileName);
+                    files.setId(fileId);
+                    files.setAppId(apps.getId());
+                    files.setFilePath(path);
+                    files.setCreateTime(new Date());
+
+                    filesList.add(files);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    countDownLatch.countDown();
+
+                    if (fis != null) {
+                        try {
+                            fis.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    minioClientPool.closeMinioClient(minioClient);
+                }
+            }).start();
+        }
+
+        countDownLatch.await();
+
+        this.saveBatch(filesList);
+
+        List<String> collect = filesList.stream().map(Files::getId).collect(Collectors.toList());
+
+        return collect;
     }
 
     /**

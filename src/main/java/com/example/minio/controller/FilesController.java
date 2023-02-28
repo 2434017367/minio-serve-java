@@ -7,13 +7,11 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.example.minio.common.enums.FilePathEnum;
 import com.example.minio.common.enums.FileTypeEnum;
 import com.example.minio.common.exception.RRException;
 import com.example.minio.common.result.Result;
-import com.example.minio.common.utils.AesUtil;
-import com.example.minio.common.utils.AppKeyUtils;
-import com.example.minio.common.utils.FileUtils;
-import com.example.minio.common.utils.LoginAppUtils;
+import com.example.minio.common.utils.*;
 import com.example.minio.common.utils.entity.appKey.Decode;
 import com.example.minio.common.utils.office.WordUtils;
 import com.example.minio.common.utils.office.minio.MinioClientPool;
@@ -23,7 +21,10 @@ import com.example.minio.entity.files.Files;
 import com.example.minio.entity.files.ShareFile;
 import com.example.minio.service.AppsService;
 import com.example.minio.service.FilesService;
-import io.minio.*;
+import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
 import lombok.extern.log4j.Log4j2;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -223,6 +224,73 @@ public class FilesController {
             // 删除临时文件
             FileUtil.del(docFilePath);
             FileUtil.del(pdfFilePath);
+        }
+    }
+
+    /**
+     * 预览
+     * @param fileId
+     * @return
+     */
+    @GetMapping("/previewDocImage")
+    public Result previewDocImage(@RequestParam("fileId") String fileId) throws Exception {
+        Apps appInfo = LoginAppUtils.getAppInfo();
+        String appId = appInfo.getId();
+        Files files = filesService.getFiles(appId, fileId);
+        if (files == null) {
+            throw new RRException("文件不存在");
+        }
+
+        MinioClient minioClient = minioClientPool.getMinioClient();
+        String pdfFilePath = fileUtils.getInterimFilePath() + ".pdf";
+        String docFilePath = null;
+        String imagesDirPath = fileUtils.getInterimFilePath();
+        try {
+            String wholeFilePath = files.getWholeFilePath();
+            String fileName = files.getFileName();
+            String fileSuffix = files.getFileSuffix();
+            FileTypeEnum fileTypeEnum = FileTypeEnum.getTypeBySuffix(fileSuffix);
+
+            String minioBucket = LoginAppUtils.getAppInfo().getMinioBucket();
+            InputStream inputStream = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(minioBucket)
+                    .object(wholeFilePath)
+                    .build());
+
+            // 判断是不是word，是转pdf
+            if (FileTypeEnum.WORD.equals(fileTypeEnum)) {
+                // 保存doc文件
+                docFilePath = fileUtils.getInterimFilePath();
+                FileOutputStream fileOutputStream = new FileOutputStream(docFilePath);
+                IOUtils.copyLarge(inputStream, fileOutputStream);
+                fileOutputStream.close();
+                inputStream.close();
+
+                // 转化pdf
+                WordUtils.docToPdf(docFilePath, pdfFilePath);
+            } else if (FileTypeEnum.PDF.equals(fileTypeEnum)) {
+                FileOutputStream fileOutputStream = new FileOutputStream(pdfFilePath);
+                // 保存pdf文件
+                IOUtils.copyLarge(inputStream, fileOutputStream);
+                fileOutputStream.close();
+                inputStream.close();
+            }
+
+            List<String> list = PdfUtil.pdfToImages(pdfFilePath, imagesDirPath, false);
+            List<String> fileIdList = filesService.batchSavePathFile(appInfo, FilePathEnum.INTERIM.getPath(), list);
+            List<String> fileUrlList = new ArrayList<>(fileIdList.size());
+            for (String fId : fileIdList) {
+                ShareFile shareFile = filesService.getShareFile(appInfo, fId, -1);
+                fileUrlList.add(shareFile.getFileUrl());
+            }
+
+            return Result.ok(fileUrlList);
+        } finally {
+            minioClientPool.closeMinioClient(minioClient);
+            // 删除临时文件
+            FileUtil.del(docFilePath);
+            FileUtil.del(pdfFilePath);
+            FileUtil.del(imagesDirPath);
         }
     }
 
