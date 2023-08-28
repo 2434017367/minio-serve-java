@@ -34,7 +34,12 @@ public enum FileTypeEnum {
     /**
      * 视频
      */
-    VIDEO("video", "mp4");
+    VIDEO("video", "mp4"),
+
+    /**
+     * 压缩包格式
+     */
+    ZIP("zip", "zip");
 
 
     /**

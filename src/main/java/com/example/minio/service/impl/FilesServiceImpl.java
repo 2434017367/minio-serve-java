@@ -179,6 +179,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesDao, Files> implements Fi
 
         // 判断文件类型是否在白名单中
         if (FileTypeEnum.isNotExistFileType(suffix)){
+            log.error("该文件类型不允许上传，文件格式为：" + suffix);
             throw new RRException("该文件类型不允许上传");
         }
 
